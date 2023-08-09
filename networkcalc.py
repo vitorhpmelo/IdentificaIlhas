@@ -139,7 +139,7 @@ def fatoraH(HT,graph,dfDMED):
                 nmeds=nmeds+1                
                     
         
-        for j in range(i+1,len(graph)):
+        for j in range(i+1,len(graph)+flag):
                 if np.abs(Hfat[j][i])>tollfill:
                     L[j,i]=-(Hfat[j][i]/Hfat[i,i])
                     Hfat[j,:]=Hfat[j,:]-(Hfat[j][i]/Hfat[i,i])*(Hfat[i,:])    

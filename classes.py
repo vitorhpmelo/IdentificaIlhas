@@ -210,6 +210,7 @@ class node_graph():
         self.Bs = 0
         self.adjk = dict()
         self.adjm = dict()
+        self.xy=None
 
     def P(self, graph):
         P = 0
