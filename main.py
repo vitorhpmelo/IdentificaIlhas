@@ -156,18 +156,6 @@ verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
 
 
 
-##
-#%%
-
-
-
-
-
-
-
-
-
-
 #%%
          
                 
