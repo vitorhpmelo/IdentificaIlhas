@@ -287,6 +287,32 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
         if len(item)>1:
             for i in range(1,len(item)):
                 g.add_edge(item[i-1],item[i],color=hex_col,weight=1)
+                
+    subgraphs=list(nx.connected_components(g))
+
+    nilhas=len(subgraphs)
+    # cores=[]
+    # for ilha in range(nilhas):
+    #     cor=list(np.random.choice(range(256), size=3))
+    #     hex_col=rgb_to_hex(cor[0],cor[1],cor[2])
+    #     cores.append(hex_col)
+
+    cores=["#B85450","#6C8EBF","#82B366"]
+
+    edges = g.edges()
+    for u,v in edges:
+        i=0
+        for gr in subgraphs:
+            if u in gr:
+                g[u][v]['color']=cores[i]
+                break
+            i=i+1
+    for u,v in edges:
+        i=0
+        if (u == ind_i["gps"] ) |(v == ind_i["gps"] ):
+            g[u][v]['weight']=0.5
+        else:
+            g[u][v]['weight']=1
 
 
     edges = g.edges()
@@ -319,6 +345,7 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
                 edge_color=colors,
                 pos=nodePos, 
                 labels=i_ind,
+                width=weights,
                 node_size=[(len(str(labelList[i]))+1)**2 * 60 for i in nodePos]
                 )
 
@@ -431,7 +458,7 @@ caminhos=encontracaminhos(graph,L)
 subgraphs=plota_grafo(graph,caminhos,ind_i,i_ind,flagPMU=1)
 # subgraphs=plota_grafo_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
 # subgraphs=plota_grafo_posSys(graph,caminhos,ind_i,i_ind,flagPMU=1)
-# subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
+subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
 verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
 
 
