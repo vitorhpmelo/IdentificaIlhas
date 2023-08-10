@@ -428,9 +428,9 @@ caminhos=encontracaminhos(graph,L)
 
 
 
-# subgraphs=plota_grafo(graph,caminhos,ind_i,i_ind,flagPMU=1)
+subgraphs=plota_grafo(graph,caminhos,ind_i,i_ind,flagPMU=1)
 # subgraphs=plota_grafo_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
-subgraphs=plota_grafo_posSys(graph,caminhos,ind_i,i_ind,flagPMU=1)
+# subgraphs=plota_grafo_posSys(graph,caminhos,ind_i,i_ind,flagPMU=1)
 # subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
 verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
 
