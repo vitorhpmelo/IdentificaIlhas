@@ -152,7 +152,7 @@ def plota_grafo_posSys(graph,caminhos,ind_i,i_ind,flagPMU):
     for no in graph:
         if no.xy != None:
             fixedpos[no.id]=no.xy
-    nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
+    nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=10)
     
     x=0
     y=0
@@ -223,7 +223,7 @@ def plota_grafo_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     x=x/len(fixedpos)
     y=y/len(fixedpos)
     
-    nodePos = nx.spring_layout(g,dim=3,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
+    nodePos = nx.spring_layout(g,dim=3,pos=fixedpos,fixed=fixedpos.keys(),seed=10)
 
     # nx.draw(g,labels=i_ind,with_labels=True,edge_color=colors,width=weights,pos=nodePos)
     nodePos[ind_i["gps"]][2]=-0.1
@@ -261,8 +261,10 @@ def plota_grafo_3d(graph,caminhos,ind_i,i_ind,flagPMU):
 
 def verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs):
     HT[:,0]
+
+
     for i in range(len(dfDMED)):
-        
+    
         c=HT[:,i]
         nodesinvolved=[]
         for j in range(len(c)):
@@ -297,13 +299,11 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     subgraphs=list(nx.connected_components(g))
 
     nilhas=len(subgraphs)
-    # cores=[]
-    # for ilha in range(nilhas):
-    #     cor=list(np.random.choice(range(256), size=3))
-    #     hex_col=rgb_to_hex(cor[0],cor[1],cor[2])
-    #     cores.append(hex_col)
 
-    cores=["#B85450","#6C8EBF","#82B366"]
+    cores=[]
+    for _ in range(nilhas):
+        cor=list(np.random.choice(range(256), size=3))
+        cores.append(rgb_to_hex(cor[0],cor[1],cor[2]))
 
     edges = g.edges()
     for u,v in edges:
@@ -330,18 +330,22 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     for no in graph:
         if no.xy != None:
             fixedpos[no.id]=no.xy
-    nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
+    if len(fixedpos)>1:
+        nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
+    else:
+        nodePos = nx.spring_layout(g,seed=5)
     
-    x=0
-    y=0
-    for key, pos in fixedpos.items():
-        x=x+pos[0]
-        y=y+pos[1]
-    
-    x=x/len(fixedpos)
-    y=y/len(fixedpos)
-    nodePos[ind_i["gps"]][0]=x
-    nodePos[ind_i["gps"]][1]=y
+    if len(fixedpos)>1:
+        x=0
+        y=0
+        for key, pos in fixedpos.items():
+            x=x+pos[0]
+            y=y+pos[1]
+        
+        x=x/len(fixedpos)
+        y=y/len(fixedpos)
+        nodePos[ind_i["gps"]][0]=x
+        nodePos[ind_i["gps"]][1]=y
 
 
     labelList=list(i_ind.values())
@@ -361,26 +365,30 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     plt.close()
 
     
-    fixedpos={}
-    for no in graph:
-        if no.xy != None:
-            fixedpos[no.id]=no.xy+tuple([0])
+    if len(fixedpos)>1:
+        fixedpos={}
+        for no in graph:
+            if no.xy != None:
+                fixedpos[no.id]=no.xy+tuple([0])
 
-    x=0
-    y=0
-    for key, pos in fixedpos.items():
-        x=x+pos[0]
-        y=y+pos[1]
-    
-    x=x/len(fixedpos)
-    y=y/len(fixedpos)
-    
-    nodePos = nx.spring_layout(g,dim=3,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
-
+        x=0
+        y=0
+        for key, pos in fixedpos.items():
+            x=x+pos[0]
+            y=y+pos[1]
+        
+        x=x/len(fixedpos)
+        y=y/len(fixedpos)
+        
+        nodePos = nx.spring_layout(g,dim=3,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
+    else:
+        nodePos = nx.spring_layout(g,dim=3,seed=5)
     # nx.draw(g,labels=i_ind,with_labels=True,edge_color=colors,width=weights,pos=nodePos)
-    nodePos[ind_i["gps"]][2]=-0.1
-    nodePos[ind_i["gps"]][0]=x
-    nodePos[ind_i["gps"]][1]=y
+    
+    if len(fixedpos)>1:
+        nodePos[ind_i["gps"]][2]=-0.1
+        nodePos[ind_i["gps"]][0]=x
+        nodePos[ind_i["gps"]][1]=y
 
     node_xyz = np.array([nodePos[v] for v in sorted(g)])
     edge_xyz = np.array([(nodePos[u], nodePos[v]) for u, v in g.edges()])
@@ -419,7 +427,7 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     return list(subgraphs)
 
 
-sys = "IEEE6"
+sys = "IEEE30"
 
 dfDBAR, dfDBRAN, dfDMED = read_files(sys)
 
@@ -431,9 +439,12 @@ dfDBAR, dfDBRAN, dfDMED = read_files(sys)
 
 graph = create_graph(bars, ram)
 
+try:
+    dfDPOS=pd.read_csv(sys+"/DPOS.csv",header=None)
+    dfDPOS.columns=["barra","x","y"]
+except:
+    dfDPOS=pd.DataFrame()
 
-dfDPOS=pd.read_csv(sys+"/DPOS.csv",header=None)
-dfDPOS.columns=["barra","x","y"]
 
 for idx,row in dfDPOS.iterrows():
     id=row["barra"]
@@ -473,9 +484,7 @@ caminhos=encontracaminhos(graph,L)
 
 
 
-# subgraphs=plota_grafo(graph,caminhos,ind_i,i_ind,flagPMU=1)
-# subgraphs=plota_grafo_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
-# subgraphs=plota_grafo_posSys(graph,caminhos,ind_i,i_ind,flagPMU=1)
+
 subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
 verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
 
