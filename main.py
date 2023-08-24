@@ -9,10 +9,16 @@ from classes import *
 from readfiles import *
 from networkstruc import *
 from networkcalc import *
+from mpl_toolkits.mplot3d import axes3d
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+
+from mpl_toolkits.mplot3d import Axes3D 
+
+# New axis settings
+
 
 def rgb_to_hex(r, g, b):
     return '#{:02x}{:02x}{:02x}'.format(r, g, b)
@@ -20,14 +26,14 @@ def rgb_to_hex(r, g, b):
 def _format_axes(ax):
     """Visualization options for the 3D axes."""
     # Turn gridlines off
-    ax.grid(False)
+    ax.grid(True,color="k",linestyle="-",linewith=20)
     # Suppress tick labels
     for dim in (ax.xaxis, ax.yaxis, ax.zaxis):
         dim.set_ticks([])
     # Set axes labels
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
-    ax.set_zlabel("z")
+    # ax.set_xlabel("x")
+    # ax.set_ylabel("y")
+    # ax.set_zlabel("z")
 
 
 def encontracaminhos(graph,L):
@@ -310,9 +316,9 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     for u,v in edges:
         i=0
         if (u == ind_i["gps"] ) |(v == ind_i["gps"] ):
-            g[u][v]['weight']=0.5
-        else:
             g[u][v]['weight']=1
+        else:
+            g[u][v]['weight']=3
 
 
     edges = g.edges()
@@ -382,10 +388,18 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     # Create the 3D figure
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
+    ax.view_init(elev=30., azim=-60)
+    ax.set_ylim([-1, 0])
+    ax.set_zlim([-0.1, 0])
+    ax.set_xlim([0, 3])
+    plt.rcParams['grid.linewidth'] = 4   # change linwidth
+    plt.rcParams['grid.color'] = "black" # change color
+    ax.set_proj_type('ortho')
 
     # Plot the nodes - alpha is scaled by "depth" automatically
+    
     ax.scatter(*node_xyz.T, s=100, ec="w")
-
+    
     # Plot the edges
     i=0
     for vizedge in edge_xyz:
@@ -405,7 +419,7 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     return list(subgraphs)
 
 
-sys = "IEEE14-5"
+sys = "IEEE6"
 
 dfDBAR, dfDBRAN, dfDMED = read_files(sys)
 
@@ -442,6 +456,10 @@ i_ind= {v: k for k, v in ind_i.items()}
 
 HT = montaH(graph, dfDMED,ind_i)
 
+Hpseudo= montaHpseudo(graph,dfDMED,ind_i)
+
+
+
 
 #%%
 
@@ -455,7 +473,7 @@ caminhos=encontracaminhos(graph,L)
 
 
 
-subgraphs=plota_grafo(graph,caminhos,ind_i,i_ind,flagPMU=1)
+# subgraphs=plota_grafo(graph,caminhos,ind_i,i_ind,flagPMU=1)
 # subgraphs=plota_grafo_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
 # subgraphs=plota_grafo_posSys(graph,caminhos,ind_i,i_ind,flagPMU=1)
 subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
