@@ -331,9 +331,9 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
         if no.xy != None:
             fixedpos[no.id]=no.xy
     if len(fixedpos)>1:
-        nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=5)
+        nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=10)
     else:
-        nodePos = nx.spring_layout(g,seed=5)
+        nodePos = nx.spring_layout(g,k=4/np.sqrt(g.order()),seed=5)
     
     if len(fixedpos)>1:
         x=0
@@ -356,10 +356,11 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
                 pos=nodePos, 
                 labels=i_ind,
                 width=weights,
-                node_size=[(len(str(labelList[i]))+1)**2 * 60 for i in nodePos]
+                node_size=[(len(str(labelList[i]))+1)**2*50  for i in nodePos]
                 )
 
     plt.box(False)
+    # plt.figure(figsize=(16,16))
     plt.savefig("Graph_possys.pdf")
     plt.savefig("Graphpossys.png")
     plt.close()
@@ -394,12 +395,10 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     edge_xyz = np.array([(nodePos[u], nodePos[v]) for u, v in g.edges()])
 
     # Create the 3D figure
-    fig = plt.figure()
+    fig = plt.figure(figsize=(8,8))
     ax = fig.add_subplot(111, projection="3d")
     ax.view_init(elev=30., azim=-60)
-    ax.set_ylim([-1, 0])
-    ax.set_zlim([-0.1, 0])
-    ax.set_xlim([0, 3])
+
     plt.rcParams['grid.linewidth'] = 4   # change linwidth
     plt.rcParams['grid.color'] = "black" # change color
     ax.set_proj_type('ortho')
@@ -467,15 +466,25 @@ i_ind= {v: k for k, v in ind_i.items()}
 
 HT = montaH(graph, dfDMED,ind_i)
 
-Hpseudo= montaHpseudo(graph,dfDMED,ind_i)
+Hpseudo,dfPseudo= montaHpseudo(graph,dfDMED,ind_i)
 
 
 
 
 #%%
 
-Hfat,L,dfPseudo,Permutacao=fatoraH(HT,graph,dfDMED)
+# Hfat,L,dfPseudo,Permutacao=fatoraH(HT,graph,dfDMED)
 
+Hfat,L,dfPseudoangulo,Permutacao, fluxos_descartaveis=fatoraH_2(HT,graph,dfDMED,Hpseudo,dfPseudo)
+
+print("pseudo fluxo descartavel")
+print(dfPseudo.iloc[fluxos_descartaveis])
+
+#%%
+print("injeção descartavel")
+mask1=dfDMED["de"].isin(dfPseudo.iloc[fluxos_descartaveis]["de"].to_list()+dfPseudo.iloc[fluxos_descartaveis]["para"].to_list())
+mask2=dfDMED["type"]==0
+print(dfDMED[(mask1) & (mask2)])
 #%%
 caminhos=encontracaminhos(graph,L)
 

@@ -95,60 +95,74 @@ def montaHpseudo(graph,dfDMED,ind_i):
     
 
 
-
+    d={}
+    d["type"]=[]
+    d["de"]=[]
+    d["para"]=[]
+    d["zmed"]=[]
+    d["prec"]=[]
+    d["i_de"]=[]
+    d["i_para"]=[]
     for index, row in dfDMED[dfDMED["type"]==0].iterrows():
         k=row["i_de"]
+        for key, item in graph[k].adjk.items():
+            d["type"].append(2)
+            d["de"].append(graph[item.de].bar.id)
+            d["para"].append(graph[item.para].bar.id)
+            d["zmed"].append(0)
+            d["prec"].append(0)
+            d["i_de"].append(item.de)
+            d["i_para"].append(item.para)
+    
+    dfPseudoMedidas=pd.DataFrame(data=d)
 
 
+
+    for index, row in dfDMED[(dfDMED["type"]==6)|(dfDMED["type"]==2)].iterrows():
+        listind=dfPseudoMedidas[(dfPseudoMedidas["de"]==row["de"]) & (dfPseudoMedidas["para"]==row["para"])].index
+        dfPseudoMedidas=dfPseudoMedidas.drop(listind)
+    dfPseudoMedidas.reset_index(inplace=True)
 
     i=0
     flagPMUV=sum(dfDMED["type"]==5)>0
             
-    HT=np.zeros((len(graph)+flagPMUV,len(dfDMED)+len(graph)+flagPMUV))
-
-    dfDMED["i_de"]=-9
-    dfDMED["i_para"]=-9
-
-    nmeds=len(dfDMED)
-
-
-
-    for idx,med in dfDMED.iterrows():
-        dfDMED.at[idx,"i_de"]=int(ind_i[med["de"]])
-        if ~((med["type"]==0) | (med["type"]==5)):
-            dfDMED.at[idx,"i_para"]=int(ind_i[med["para"]])
-
-
+    Hpseu=np.zeros((len(graph)+flagPMUV,len(dfPseudoMedidas)))
     
 
-    dfDMED=dfDMED.astype({"i_de":'int32',"i_para":'int32'})
-    dfDMED["inst"]=1
-    for idx,med in dfDMED.iterrows():
+
+
+
+
+
+
+    dfPseudoMedidas=dfPseudoMedidas.astype({"i_de":'int32',"i_para":'int32'})
+    dfPseudoMedidas["inst"]=1
+    for idx,med in dfPseudoMedidas.iterrows():
         # if the measurement is a Flow or a current fwo
         if (med.type==2)| (med.type==6):
             de=int(med.i_de)
             para=int(med.i_para)
-            HT[de][i]=1
-            HT[para][i]=-1
+            Hpseu[de][i]=1
+            Hpseu[para][i]=-1
         # if the measurement is a injection 
         elif (med.type==0):
             k=int(med.i_de)
             m=0
             for item in graph[k].ladjk:
-                HT[item][i]=-1
+                Hpseu[item][i]=-1
                 m=m+1
             for item in graph[k].ladjm:
-                HT[item][i]=-1
+                Hpseu[item][i]=-1
                 m=m+1
-            HT[k][i]=m
+            Hpseu[k][i]=m
         elif (med.type==5):
             k=int(med.i_de)
-            HT[k][i]=1
-            HT[-1][i]=-1
+            Hpseu[k][i]=1
+            Hpseu[-1][i]=-1
         i=i+1
 
     
-    return HT
+    return Hpseu,dfPseudoMedidas
 
 def fatoraH(HT,graph,dfDMED):
     """
@@ -226,7 +240,7 @@ def fatoraH(HT,graph,dfDMED):
     
     return Hfat,L,dfPseudo,Permutacao
 
-def fatoraH_2(HT,graph,dfDMED):
+def fatoraH_2(HT,graph,dfDMED,Hpseudo,dfPseudos):
     """
     Função para fatorar a matriz H
     @param: matriz jacobiana HT array by dimensional de float do numpy
@@ -272,6 +286,14 @@ def fatoraH_2(HT,graph,dfDMED):
                     break
             if obs==0:
                 # não encontrou, precisa instalar pseudo medida de angulo
+                fluxosdescartaveis=[]
+                for j in range(Hpseudo.shape[1]):
+                    if np.abs(Hpseudo[i][j])>tollfill:
+                        fluxosdescartaveis.append(j)
+                if len(fluxosdescartaveis)>0:
+                    print("existem medidas de fluxo descartaveis")
+                    return Hfat,L,dfPseudo,Permutacao,fluxosdescartaveis      
+
                 barra=i
                 Permutacao=np.append(Permutacao,nmeds)
                 Hfat[i][nmeds]=1
@@ -284,7 +306,8 @@ def fatoraH_2(HT,graph,dfDMED):
         for j in range(i+1,len(graph)+flag):
                 if np.abs(Hfat[j][i])>tollfill:
                     L[j,i]=-(Hfat[j][i]/Hfat[i,i])
-                    Hfat[j,:]=Hfat[j,:]-(Hfat[j][i]/Hfat[i,i])*(Hfat[i,:])    
+                    Hfat[j,:]=Hfat[j,:]-(Hfat[j][i]/Hfat[i,i])*(Hfat[i,:])
+                    Hpseudo[j,:]=Hpseudo[j,:]-(Hfat[j][i]/Hfat[i,i])*Hpseudo[j,:]   
                 else:  
                     Hfat[j][i]=0  
 
@@ -300,7 +323,7 @@ def fatoraH_2(HT,graph,dfDMED):
 
 
     
-    return Hfat,L,dfPseudo,Permutacao
+    return Hfat,L,dfPseudo,Permutacao,fluxosdescartaveis
 
 
 
