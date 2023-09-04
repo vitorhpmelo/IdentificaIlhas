@@ -333,7 +333,7 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     if len(fixedpos)>1:
         nodePos = nx.spring_layout(g,pos=fixedpos,fixed=fixedpos.keys(),seed=10)
     else:
-        nodePos = nx.spring_layout(g,k=4/np.sqrt(g.order()),seed=5)
+        nodePos = nx.spring_layout(g,k=1/np.sqrt(g.order()),iterations=20,seed=5)
     
     if len(fixedpos)>1:
         x=0
@@ -347,20 +347,22 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
         nodePos[ind_i["gps"]][0]=x
         nodePos[ind_i["gps"]][1]=y
 
-
+    fig, ax = plt.subplots(figsize=(16,16))
     labelList=list(i_ind.values())
     # nx.draw(g,labels=i_ind,with_labels=True,edge_color=colors,width=weights)
+    
     nx.draw_networkx(g,
                 node_color =['#74CCF4' for i in nodePos], 
                 edge_color=colors,
                 pos=nodePos, 
                 labels=i_ind,
                 width=weights,
-                node_size=[(len(str(labelList[i]))+1)**2*50  for i in nodePos]
+                node_size=[(len(str(labelList[i]))+1)**2*50  for i in nodePos],
+                ax=ax
                 )
 
-    plt.box(False)
-    # plt.figure(figsize=(16,16))
+    
+    
     plt.savefig("Graph_possys.pdf")
     plt.savefig("Graphpossys.png")
     plt.close()
@@ -426,7 +428,7 @@ def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     return list(subgraphs)
 
 
-sys = "IEEE30"
+sys = "IEEE118"
 
 dfDBAR, dfDBRAN, dfDMED = read_files(sys)
 
@@ -496,6 +498,20 @@ caminhos=encontracaminhos(graph,L)
 
 subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
 verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
+
+
+#%%
+ilhas=[]
+for subgraph in subgraphs:
+    il=list(subgraph)
+    ilha=[]
+    for barra in il:
+        if barra<len(graph):
+            ilha.append(graph[barra].bar.id)
+        else:
+            ilha.append("GPS") 
+    ilhas.append(ilha)
+
 
 
 
