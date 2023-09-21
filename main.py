@@ -263,6 +263,7 @@ def verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs):
     HT[:,0]
 
 
+    lst_remove=[]
     for i in range(len(dfDMED)):
     
         c=HT[:,i]
@@ -280,7 +281,26 @@ def verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs):
                 emquantosgrafos=emquantosgrafos+1
         
         if emquantosgrafos>1:
-            print(dfDMED.iloc[i])
+            lst_remove.append(i)
+    return lst_remove
+
+def subgraps(graph,caminhos,ind_i,i_ind,flagPMU):
+    g=nx.Graph()
+
+    for no in graph:
+        g.add_node(no.id)
+
+
+    for key, item in caminhos.items():
+        cor=list(np.random.choice(range(256), size=3))
+        hex_col=rgb_to_hex(cor[0],cor[1],cor[2])
+        if len(item)>1:
+            for i in range(1,len(item)):
+                g.add_edge(item[i-1],item[i],color=hex_col,weight=1)
+            
+    subgraphs=list(nx.connected_components(g))
+
+
         
 def plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU):
     g=nx.Graph()
@@ -432,14 +452,24 @@ sys = "IEEE118"
 
 dfDBAR, dfDBRAN, dfDMED = read_files(sys)
 
+
+
+
 [bars, nbars, pv, pq, ind_i] = creat_bar(dfDBAR)
 
 [ram, nbran] = create_bran(dfDBRAN, ind_i)
 
+#%%
+# dfDESCA=pd.read_csv("Injec_descartaveis_teste.csv",index_col=0)
+# descartaveis=dfDESCA["de"].tolist()
 
-
+# #%%
+# drop_idx=dfDMED[(dfDMED["type"]==0)&(dfDMED["de"].isin(descartaveis))].index
+# dfDMED.drop(drop_idx,inplace=True)
+# dfDMED=dfDMED.reset_index(drop=True)
+#%%
 graph = create_graph(bars, ram)
-
+#%%
 try:
     dfDPOS=pd.read_csv(sys+"/DPOS.csv",header=None)
     dfDPOS.columns=["barra","x","y"]
@@ -462,48 +492,68 @@ if flagPMU==1:
 
 i_ind= {v: k for k, v in ind_i.items()}
 ## filtra DMED
-
-
-#%%
-
-HT = montaH(graph, dfDMED,ind_i)
-
-Hpseudo,dfPseudo= montaHpseudo(graph,dfDMED,ind_i)
-
-
-
+dfDMED_descartaveis=pd.DataFrame()
+dfDMED_descartaveis2=pd.DataFrame()
 
 #%%
+dscartaveis=0
+flagCaminhos=0
+while((dscartaveis==0)|(flagCaminhos==1)):
 
-# Hfat,L,dfPseudo,Permutacao=fatoraH(HT,graph,dfDMED)
+    HT = montaH(graph, dfDMED,ind_i)
 
-Hfat,L,dfPseudoangulo,Permutacao, fluxos_descartaveis=fatoraH_2(HT,graph,dfDMED,Hpseudo,dfPseudo)
+    Hpseudo,dfPseudo= montaHpseudo(graph,dfDMED,ind_i)
 
-print("pseudo fluxo descartavel")
-print(dfPseudo.iloc[fluxos_descartaveis])
 
-#%%
-print("injeção descartavel")
-mask1=dfDMED["de"].isin(dfPseudo.iloc[fluxos_descartaveis]["de"].to_list()+dfPseudo.iloc[fluxos_descartaveis]["para"].to_list())
-mask2=dfDMED["type"]==0
-print(dfDMED[(mask1) & (mask2)])
+
+    Hfat,L,dfPseudoangulo,Permutacao, fluxos_descartaveis=fatoraH_2(HT,graph,dfDMED,Hpseudo,dfPseudo)
+
+    print("pseudo fluxo descartavel")
+    print(dfPseudo.iloc[fluxos_descartaveis])
+
+    print("injeção descartavel")
+    mask1=dfDMED["de"].isin(dfPseudo.iloc[fluxos_descartaveis]["de"].to_list()+dfPseudo.iloc[fluxos_descartaveis]["para"].to_list())
+    mask2=dfDMED["type"]==0
+    print(dfDMED[(mask1) & (mask2)])
+    drop_indx=dfDMED[(mask1) & (mask2)].index
+    if len(dfDMED[(mask1) & (mask2)])>0:
+        dfDMED_descartaveis=pd.concat([dfDMED_descartaveis,dfDMED[(mask1) & (mask2)].copy()])
+        dfDMED.drop(drop_indx,inplace=True)
+        dfDMED=dfDMED.reset_index(drop=True)
+    else:
+        dscartaveis=1
+
 #%%
 caminhos=encontracaminhos(graph,L)
+subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
+descataveis2=verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
+
+if len(descataveis2)>0:
+    dfDMED_descartaveis2=pd.concat([dfDMED_descartaveis2,dfDMED.iloc[descataveis2]])
+    dfDMED.drop(descataveis2,inplace=True)
+    dfDMED=dfDMED.reset_index(drop=True)
+else: 
+    flagCaminhos=0
+
+
+
+
 
 #%%
 
+dfDMED_descartaveis.to_csv("Injec_descartaveis.csv")
 
-
-
-
-subgraphs=plota_grafo_2d_e_3d(graph,caminhos,ind_i,i_ind,flagPMU=1)
-verifica_medidas_caminhos(graph,HT,dfDMED,subgraphs)
-
-
+#%%
+dfDMED_descartaveis2.to_csv("Injec_descartaveis2.csv")
 #%%
 ilhas=[]
+i=0
+maiorilha=0
 for subgraph in subgraphs:
     il=list(subgraph)
+    if len(subgraph)>len(subgraphs[maiorilha]):
+        maiorilha=i
+    i=i+1
     ilha=[]
     for barra in il:
         if barra<len(graph):
@@ -514,6 +564,13 @@ for subgraph in subgraphs:
 
 
 
-
-
 #%%
+
+d={"barrasobs":ilhas[maiorilha]}
+
+dfOBS=pd.DataFrame(data=d)
+
+
+dfOBS.to_csv("obse.csv",index=None)
+
+# %%

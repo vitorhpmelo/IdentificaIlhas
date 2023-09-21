@@ -41,8 +41,8 @@ def montaH(graph,dfDMED,ind_i):
             
     HT=np.zeros((len(graph)+flagPMUV,len(dfDMED)+len(graph)+flagPMUV))
 
-    dfDMED["i_de"]=-9
-    dfDMED["i_para"]=-9
+    dfDMED["i_de"]=int(-9)
+    dfDMED["i_para"]=int(-9)
 
     nmeds=len(dfDMED)
 
@@ -54,15 +54,16 @@ def montaH(graph,dfDMED,ind_i):
 
     
 
-    dfDMED=dfDMED.astype({"i_de":'int32',"i_para":'int32'})
+    dfDMED=dfDMED.astype({"i_de":'int32',"i_para":'int32'},)
     dfDMED["inst"]=1
     for idx,med in dfDMED.iterrows():
         # if the measurement is a Flow or a current fwo
         if (med.type==2)| (med.type==6):
             de=int(med.i_de)
             para=int(med.i_para)
-            HT[de][i]=1
-            HT[para][i]=-1
+            if para in  graph[de].ladjk+graph[de].ladjm:
+                HT[de][i]=1
+                HT[para][i]=-1
         # if the measurement is a injection 
         elif (med.type==0):
             k=int(med.i_de)
@@ -103,8 +104,9 @@ def montaHpseudo(graph,dfDMED,ind_i):
     d["prec"]=[]
     d["i_de"]=[]
     d["i_para"]=[]
+
     for index, row in dfDMED[dfDMED["type"]==0].iterrows():
-        k=row["i_de"]
+        k=int(row["i_de"])
         for key, item in graph[k].adjk.items():
             d["type"].append(2)
             d["de"].append(graph[item.de].bar.id)
@@ -113,6 +115,14 @@ def montaHpseudo(graph,dfDMED,ind_i):
             d["prec"].append(0)
             d["i_de"].append(item.de)
             d["i_para"].append(item.para)
+        for key, item in graph[k].adjm.items():
+            d["type"].append(2)
+            d["de"].append(graph[item.para].bar.id)
+            d["para"].append(graph[item.de].bar.id)
+            d["zmed"].append(0)
+            d["prec"].append(0)
+            d["i_de"].append(item.para)
+            d["i_para"].append(item.de)
     
     dfPseudoMedidas=pd.DataFrame(data=d)
 
@@ -160,6 +170,7 @@ def montaHpseudo(graph,dfDMED,ind_i):
             Hpseu[k][i]=1
             Hpseu[-1][i]=-1
         i=i+1
+
 
     
     return Hpseu,dfPseudoMedidas

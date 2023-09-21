@@ -24,7 +24,7 @@ def read_files(sys):
         print("Error while reading DBRAN file")
         exit(1)
     try: # if the DMED exists the program reads it, this file is not mandatory for power flow 
-        dfDMED=pd.read_csv(sys+"/DMED.csv",header=None)
+        dfDMED=pd.read_csv(sys+"/DMED.csv",header=None,dtype={0:np.int64,1:np.int64,2:np.int64,3:np.float64})
         dfDMED.columns=["type","de","para","zmed","prec"]
     except:
         print("There is no DMED")
